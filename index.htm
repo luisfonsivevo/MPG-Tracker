@@ -49,7 +49,7 @@ th, td
 			</tr>
 		</table>
 		<br>
-		*This value is not used in any calculations. You need at least two entries to track milage.
+		<span id="asterisk">*This value is not used in any calculations. You need at least two entries to track milage.</span>
 		<br><br>
 		<h3>Formulas - check my math</h3>
 		<b>Miles driven</b> = Current odometer - Previous odometer<br>
@@ -58,9 +58,9 @@ th, td
 		<br><br>
 		<a href="https://github.com/luisfonsivevo/MPG-Tracker/blob/master/index.htm">Source code</a>
 		<script>
-var entries = JSON.parse(localStorage.entries || "[]");
+var entries;
 var odometerIn, gallonsIn, priceIn, notesIn;
-var table, tableDefault;
+var table, tableDefault, asteriskStyle;
 
 function main()
 {
@@ -71,7 +71,9 @@ function main()
 	
 	table = document.getElementById("table");
 	tableDefault = table.innerHTML;
+	asteriskStyle = document.getElementById("asterisk").style;
 	
+	entries = JSON.parse(localStorage.entries || "[]");
 	populateTable();
 }
 
@@ -87,8 +89,7 @@ function addEntry()
 	};
 	
 	entries.push(entry);
-	localStorage.entries = JSON.stringify(entries);
-	populateTable();
+	saveAndPopulate();
 }
 
 function removeEntry()
@@ -96,8 +97,7 @@ function removeEntry()
 	if(confirm("You sure, bud?"))
 	{
 		entries.pop();
-		localStorage.entries = JSON.stringify(entries);
-		populateTable();
+		saveAndPopulate();
 	}
 }
 
@@ -106,9 +106,14 @@ function clearTable()
 	if(confirm("You SURE, bud?"))
 	{
 		entries = [];
-		localStorage.entries = JSON.stringify(entries);
-		populateTable();
+		saveAndPopulate();
 	}
+}
+
+function saveAndPopulate()
+{
+	localStorage.entries = JSON.stringify(entries);
+	populateTable();
 }
 
 function populateTable()
@@ -178,6 +183,8 @@ function populateTable()
 		
 		table.appendChild(row);
 	}
+	
+	asteriskStyle.display = entries.length > 0 ? "" : "none";
 }
 
 function addCell(row, data = "", css = "", type = "td")
