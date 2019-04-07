@@ -1,0 +1,197 @@
+<html>
+	<head>
+		<title>MPG Tracker</title>
+		<style>
+table, th, td
+{
+	border: 1px solid black;
+}
+
+th, td
+{
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+.output
+{
+	background: #ddd;
+}
+
+.average
+{
+	background: #aaa;
+}
+		</style>
+	</head>
+	<body onload="main()">
+		<h1>MPG Tracker</h1>
+		<h3>Every time you fill up your gas tank, track your milage here!</h3>
+		<br>
+		Odometer reading: <input id="odometer"><br>
+		Gallons of fuel added: <input id="gallons"><br>
+		Total price of fuel: $<input id="price"><br>
+		Other notes (Optional - where you traveled, oil changes, etc.): <input id="notes"><br>
+		<button onclick="addEntry()">Add entry</button>
+		<button onclick="removeEntry()">Remove entry</button>
+		<button onclick="clearTable()">Clear table</button>
+		<br><br><br><br>
+		<table id="table">
+			<tr>
+				<th>Date</th>
+				<th>Odometer</th>
+				<th>Gallons</th>
+				<th>Price</th>
+				<th class="output">Miles driven</th>
+				<th class="output">Miles per gallon</th>
+				<th class="output">Cost per mile</th>
+				<th>Notes</th>
+			</tr>
+		</table>
+		<br>
+		*This value is not used in any calculations. You need at least two entries to track milage.
+		<br><br>
+		<h3>Formulas - check my math</h3>
+		<b>Miles driven</b> = Current odometer - Previous odometer<br>
+		<b>MPG</b> = Miles driven / Gallons<br>
+		<b>CPM</b> = Price / Miles driven
+		<br><br>
+		<a href="https://github.com/luisfonsivevo/MPG-Tracker/blob/master/index.htm">Source code</a>
+		<script>
+var entries = JSON.parse(localStorage.entries || "[]");
+var odometerIn, gallonsIn, priceIn, notesIn;
+var table, tableDefault;
+
+function main()
+{
+	odometerIn = document.getElementById("odometer");
+	gallonsIn = document.getElementById("gallons");
+	priceIn = document.getElementById("price");
+	notesIn = document.getElementById("notes");
+	
+	table = document.getElementById("table");
+	tableDefault = table.innerHTML;
+	
+	populateTable();
+}
+
+function addEntry()
+{
+	var entry =
+	{
+		date: Date.now(),
+		odometer: Number(odometerIn.value),
+		gallons: Number(gallonsIn.value),
+		price: Number(priceIn.value),
+		notes: notesIn.value.trim()
+	};
+	
+	entries.push(entry);
+	localStorage.entries = JSON.stringify(entries);
+	populateTable();
+}
+
+function removeEntry()
+{
+	if(confirm("You sure, bud?"))
+	{
+		entries.pop();
+		localStorage.entries = JSON.stringify(entries);
+		populateTable();
+	}
+}
+
+function clearTable()
+{
+	if(confirm("You SURE, bud?"))
+	{
+		entries = [];
+		localStorage.entries = JSON.stringify(entries);
+		populateTable();
+	}
+}
+
+function populateTable()
+{
+	table.innerHTML = tableDefault;
+	
+	var row, averageMpgNum = 0, averageCpmNum = 0, averageDen = 0;
+	
+	for(var i in entries)
+	{
+		var entry = entries[i];
+		var prv = entries[i - 1];
+		
+		var asterisk = i == 0 ? "*" : "";
+		row = document.createElement("tr");
+		
+		var date = new Date(entry.date);
+		var prettyDate = date.toLocaleDateString() + "<br>" + date.toLocaleTimeString();
+		
+		var miles, mpg, cpm;
+		if(i > 0)
+		{
+			miles = roundToHundredth(entry.odometer - prv.odometer);
+			mpg = roundToHundredth(miles / entry.gallons);
+			cpm = roundToHundredth(entry.price / miles);
+			
+			averageMpgNum += miles * mpg;
+			averageCpmNum += miles * cpm;
+			averageDen += miles;
+			
+			miles += " mi";
+			mpg += " mpg";
+			cpm = "$" + cpm + "/mi";
+		}
+		else
+		{
+			miles = "N/A";
+			mpg = "N/A";
+			cpm = "N/A";
+		}
+		
+		addCell(row, prettyDate);
+		addCell(row, entry.odometer + " mi");
+		addCell(row, entry.gallons + " gal" + asterisk);
+		addCell(row, "$" + entry.price + asterisk);
+		addCell(row, miles, "output");
+		addCell(row, mpg, "output");
+		addCell(row, cpm, "output");
+		addCell(row, entry.notes);
+		
+		table.appendChild(row);
+	}
+	
+	if(entries.length > 2)
+	{
+		var averageMpg = roundToHundredth(averageMpgNum / averageDen);
+		var averageCpm = roundToHundredth(averageCpmNum / averageDen);
+		var totalMiles = roundToHundredth(entry.odometer - entries[0].odometer) + " mi";
+		row = document.createElement("tr");
+		
+		addCell(row, "Weighted average", "", "th");
+		for(var i = 0; i < 3; i++) addCell(row);
+		addCell(row, totalMiles, "average");
+		addCell(row, averageMpg + " mpg", "average");
+		addCell(row, "$" + averageCpm + "/mi", "average");
+		addCell(row);
+		
+		table.appendChild(row);
+	}
+}
+
+function addCell(row, data = "", css = "", type = "td")
+{
+	var cell = document.createElement(type);
+	cell.innerHTML = data;
+	cell.className = css;
+	row.appendChild(cell);
+}
+
+function roundToHundredth(x)
+{
+	return Math.round(100 * x) / 100;
+}
+		</script>
+	</body>
+</html>
